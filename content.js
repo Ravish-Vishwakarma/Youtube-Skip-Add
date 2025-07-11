@@ -1,7 +1,7 @@
-// Your skip ad script as an async function
+
 async function runSkipAdSequence() {
-    // Paste your full skip ad logic here
-    // For example, from your original code:
+
+
 
     function getIframe() {
         return document.getElementById('iframe');
@@ -108,7 +108,7 @@ async function runSkipAdSequence() {
     await runSequence();
 }
 
-// Function to insert the skip button if not already present
+
 function insertSkipButton() {
     const buttonContainer = document.querySelector('#top-level-buttons-computed');
     if (!buttonContainer) {
@@ -117,14 +117,14 @@ function insertSkipButton() {
     }
 
     if (document.querySelector('#skip-ad-button')) {
-        // Button already exists
+
         return;
     }
 
     const btn = document.createElement('button');
     btn.id = 'skip-ad-button';
 
-    // Style the button like YouTube's style for top buttons
+
     btn.style.width = '40px';
     btn.style.height = '40px';
     btn.style.borderRadius = '50%';
@@ -138,9 +138,9 @@ function insertSkipButton() {
     btn.style.padding = '0';
     btn.style.backdropFilter = 'blur(4px)';
 
-    // Skip icon SVG (simple "fast forward" icon)
+
     btn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" height="28" width="28" viewBox="0 0 24 24" fill="white">
+    <svg xmlns="http:
       <path d="M4 4v16l12-8zM16 4v16h2V4z"/>
     </svg>
   `;
@@ -156,7 +156,7 @@ function insertSkipButton() {
     console.log('Skip Ad button inserted.');
 }
 
-// Initial insertion on page load (with delay for YouTube DOM)
+
 if (location.href.includes('watch')) {
     setTimeout(() => {
         insertSkipButton();
@@ -165,7 +165,7 @@ if (location.href.includes('watch')) {
 
 let lastUrl = location.href;
 
-// Observe URL changes for SPA navigation on YouTube
+
 new MutationObserver(() => {
     if (location.href !== lastUrl) {
         lastUrl = location.href;
