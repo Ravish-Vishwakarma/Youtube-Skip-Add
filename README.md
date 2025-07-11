@@ -2,7 +2,7 @@
 
 To use this extension, do the following:
 
-1. Download this project.
+1. Download this project and extract it.
 2. Open Chrome.
 3. In the top right, click on the three dots and select: Extensions < Manage Extensions (or open this url chrome://extensions/)
 4. In the top right corner enable the "Developer Mode".
