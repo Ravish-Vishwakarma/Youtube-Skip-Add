@@ -1,23 +1,3 @@
-chrome.action.onClicked.addListener(async (tab) => {
-    if (!tab.url.includes("youtube.com")) {
-
-        return;
-    }
-
-
-
-
-
-    chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-
-
-            if (typeof runSequence === "function") {
-                runSequence();
-            } else {
-                console.log("runSequence not found");
-            }
-        }
-    });
-});
+// This service worker is required for Manifest V3 extensions.
+// For this extension, all logic is handled by the content script.
+// No background logic is needed.

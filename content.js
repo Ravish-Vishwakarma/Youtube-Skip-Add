@@ -1,179 +1,87 @@
+/**
+ * YouTube Ad Skipper (v5 - Final, Direct Control)
+ * This script is stable and skips ads by directly manipulating the video player,
+ * which is more reliable than simulating clicks. It also properly injects a
+ * manual skip button into the player UI.
+ */
 
-async function runSkipAdSequence() {
+console.log("YouTube Ad Skipper: Initializing (Direct Control Mode)");
 
+// --- CORE FUNCTIONS ---
 
-
-    function getIframe() {
-        return document.getElementById('iframe');
+/**
+ * Finds any active ad video and force-skips it by fast-forwarding to the end.
+ * This is the primary ad-skipping mechanism.
+ */
+const forceSkipAd = () => {
+    // Ads on YouTube play in a container with the class 'ad-showing'.
+    const adContainer = document.querySelector('.ad-showing');
+    if (!adContainer) {
+        return; // No ad is showing, so we do nothing.
     }
 
-    function wait(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+    // Find the actual HTML5 video element within the ad container.
+    const adVideo = adContainer.querySelector('video');
+
+    // If we find an ad video and it has a valid duration, skip it.
+    if (adVideo && adVideo.duration) {
+        // **The Fix:** Don't click. Force the video's time to its end.
+        adVideo.currentTime = adVideo.duration;
+        console.log(`Skipper: Force-skipped ad by setting currentTime to ${adVideo.duration}`);
     }
-
-    async function retryUntilSuccess(checkFn, interval = 500, timeout = 10000) {
-        const startTime = Date.now();
-
-        while (Date.now() - startTime < timeout) {
-            if (await checkFn()) {
-                return true;
-            }
-            await wait(interval);
-        }
-        throw new Error('Timeout');
+    
+    // We also click the button as a backup to help dismiss the ad's UI elements.
+    const skipButton = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern');
+    if (skipButton) {
+        skipButton.click();
     }
+};
 
-    function tryClickAdButton() {
-        const adButton = document.querySelector(
-            '.ytp-ad-button.ytp-ad-button-link.ytp-ad-clickable.ytp-ad-hover-text-button--clean-player'
-        );
-        if (adButton) {
-            adButton.click();
-            return true;
-        }
-        return false;
-    }
+/**
+ * Creates and injects the manual skip button into the player's control bar.
+ * It uses YouTube's own styles to ensure it looks perfect.
+ */
+const insertManualSkipButton = () => {
+    const controlsContainer = document.querySelector('.ytp-right-controls');
 
-    async function getIframeDocument() {
-        const iframe = getIframe();
-        if (!iframe) return null;
-
-        while (!iframe.contentDocument) {
-            await wait(200);
-        }
-        return iframe.contentDocument;
-    }
-
-    async function tryClickBlockButtonInIframe() {
-        const doc = await getIframeDocument();
-        if (!doc) return false;
-
-        const blockButton = doc.querySelector('button[aria-label="Block"]');
-        if (blockButton) {
-            blockButton.click();
-            return true;
-        }
-        return false;
-    }
-
-    async function tryClickContinueButtonInIframe() {
-        const doc = await getIframeDocument();
-        if (!doc) return false;
-
-        const continueButton = [...doc.querySelectorAll('div[role="button"]')].find(btn => {
-            const span = btn.querySelector('span.RveJvd.snByac');
-            return span && span.textContent.trim() === 'CONTINUE' && btn.offsetParent !== null;
-        });
-
-        if (continueButton) {
-            continueButton.click();
-            console.log('Continue button clicked');
-            return true;
-        }
-        return false;
-    }
-
-    function tryClickOverlayBackdrop() {
-        const overlay = document.querySelector('tp-yt-iron-overlay-backdrop.opened');
-        if (overlay) {
-            overlay.click();
-            return true;
-        }
-        return false;
-    }
-
-    async function runSequence() {
-        try {
-            await wait(500);
-            await retryUntilSuccess(tryClickAdButton);
-            console.log('Ad button clicked');
-
-            await wait(500);
-            await retryUntilSuccess(tryClickBlockButtonInIframe);
-            console.log('Block button clicked');
-
-            await wait(500);
-            await retryUntilSuccess(tryClickContinueButtonInIframe);
-            console.log('Continue button clicked');
-
-            await wait(500);
-            await retryUntilSuccess(tryClickOverlayBackdrop);
-            console.log('Overlay backdrop clicked');
-
-        } catch (error) {
-            console.log('Sequence stopped:', error.message);
-        }
-    }
-
-    await runSequence();
-}
-
-
-function insertSkipButton() {
-    const buttonContainer = document.querySelector('#top-level-buttons-computed');
-    if (!buttonContainer) {
-        console.log('Button container not found yet.');
+    // Stop if the player controls aren't ready or if our button is already there.
+    if (!controlsContainer || document.getElementById('skipper-manual-force-skip-button')) {
         return;
     }
 
-    if (document.querySelector('#skip-ad-button')) {
+    const manualButton = document.createElement('button');
+    manualButton.id = 'skipper-manual-force-skip-button';
+    
+    // Use YouTube's native class for seamless styling. This is crucial.
+    manualButton.className = 'ytp-button'; 
+    manualButton.title = 'Force Skip Ad';
+    
+    // **This line is now fixed and complete.**
+    manualButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M4 4v16l12-8zM16 4v16h2V4z"/></svg>`;
+    
+    // Make the button trigger our new force-skip function.
+    manualButton.onclick = forceSkipAd;
 
-        return;
+    // Place the button before the "Settings" gear for a consistent position.
+    const settingsButton = controlsContainer.querySelector('.ytp-settings-button');
+    if (settingsButton) {
+        controlsContainer.insertBefore(manualButton, settingsButton);
     }
+};
 
-    const btn = document.createElement('button');
-    btn.id = 'skip-ad-button';
+// --- MAIN OBSERVER ---
 
+// A single, powerful MutationObserver watches for all changes on the page.
+const observer = new MutationObserver(() => {
+    // Every time the page updates, we run our functions.
+    forceSkipAd();            // Check for any ads that need to be skipped.
+    insertManualSkipButton(); // Check if our button needs to be added to the UI.
+});
 
-    btn.style.width = '40px';
-    btn.style.height = '40px';
-    btn.style.borderRadius = '50%';
-    btn.style.background = 'rgba(50, 50, 50, 0.6)';
-    btn.style.border = 'none';
-    btn.style.cursor = 'pointer';
-    btn.style.display = 'flex';
-    btn.style.alignItems = 'center';
-    btn.style.justifyContent = 'center';
-    btn.style.marginLeft = '8px';
-    btn.style.padding = '0';
-    btn.style.backdropFilter = 'blur(4px)';
+// Start the observer.
+observer.observe(document.body, {
+    childList: true,
+    subtree: true
+});
 
-
-    btn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" viewBox="0 0 24 24">
-        <path d="M4 4v16l12-8zM16 4v16h2V4z"/>
-    </svg>
-    `;
-
-
-    btn.title = 'Skip Ad';
-
-    btn.onclick = () => {
-        console.log('Skip Ad button clicked!');
-        runSkipAdSequence();
-    };
-
-    buttonContainer.appendChild(btn);
-    console.log('Skip Ad button inserted.');
-}
-
-
-if (location.href.includes('watch')) {
-    setTimeout(() => {
-        insertSkipButton();
-    }, 1000);
-}
-
-let lastUrl = location.href;
-
-
-new MutationObserver(() => {
-    if (location.href !== lastUrl) {
-        lastUrl = location.href;
-        if (location.href.includes('watch')) {
-            setTimeout(() => {
-                insertSkipButton();
-            }, 1000);
-        }
-    }
-}).observe(document, { subtree: true, childList: true });
+console.log("YouTube Ad Skipper: Observer is active and ready.");
