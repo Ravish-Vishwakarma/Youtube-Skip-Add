@@ -1,31 +1,27 @@
 {
     "manifest_version": 3,
     "name": "YouTube Ad Skipper",
-    "version": "1.0",
-    "description": "Skip YouTube ads with a toolbar button and extension icon.",
+    "version": "2.0",
+    "description": "Skips YouTube ads automatically and adds a manual skip button to the player.",
     "permissions": [
-        "scripting",
-        "tabs",
         "storage"
     ],
     "host_permissions": [
-        "https://www.youtube.com/*"
+        "*://*.youtube.com/*"
     ],
-    "background": {
-        "service_worker": "background.js"
-    },
     "action": {
         "default_icon": {
             "16": "icons/skip-16.png",
             "32": "icons/skip-32.png",
             "48": "icons/skip-48.png",
             "128": "icons/skip-128.png"
-        }
+        },
+        "default_title": "YouTube Ad Skipper"
     },
     "content_scripts": [
         {
             "matches": [
-                "https://www.youtube.com/*"
+                "*://*.youtube.com/*"
             ],
             "js": [
                 "content.js"
@@ -34,6 +30,7 @@
         }
     ],
     "icons": {
-        "48": "icons/skip-48.png"
+        "48": "icons/skip-48.png",
+        "128": "icons/skip-128.png"
     }
 }
