@@ -1,82 +1,178 @@
-chrome.storage.sync.get(['enabled'], (data) => {
-    if (data.enabled === false) return;
+// Your skip ad script as an async function
+async function runSkipAdSequence() {
+    // Paste your full skip ad logic here
+    // For example, from your original code:
 
-    function showToast(message = "Skip sequence started") {
-        const existing = document.querySelector('#skip-ad-toast');
-        if (existing) existing.remove();
-
-        const toast = document.createElement('div');
-        toast.id = 'skip-ad-toast';
-        toast.textContent = message;
-        toast.style.position = 'fixed';
-        toast.style.bottom = '48px';
-        toast.style.left = '24px';
-        toast.style.background = '#323232';
-        toast.style.color = 'white';
-        toast.style.padding = '12px 20px';
-        toast.style.borderRadius = '4px';
-        toast.style.fontSize = '14px';
-        toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
-        toast.style.zIndex = '9999';
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s ease';
-
-        document.body.appendChild(toast);
-        setTimeout(() => (toast.style.opacity = '1'), 10);
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 2000);
+    function getIframe() {
+        return document.getElementById('iframe');
     }
 
-    // The runSequence function stays the same (omitted here for brevity)
-    async function runSequence() {
-        // ... (your existing runSequence code here)
+    function wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    function insertSkipButton() {
-        const buttonContainer = document.querySelector('#top-level-buttons-computed');
-        if (!buttonContainer) return false;
-        if (document.querySelector('#skip-ad-button')) return false; // avoid duplicates
+    async function retryUntilSuccess(checkFn, interval = 500, timeout = 10000) {
+        const startTime = Date.now();
 
-        const btn = document.createElement('button');
-        btn.id = 'skip-ad-button';
+        while (Date.now() - startTime < timeout) {
+            if (await checkFn()) {
+                return true;
+            }
+            await wait(interval);
+        }
+        throw new Error('Timeout');
+    }
 
-        btn.style.width = '40px';
-        btn.style.height = '40px';
-        btn.style.borderRadius = '50%';
-        btn.style.background = 'rgba(50, 50, 50, 0.6)';
-        btn.style.border = 'none';
-        btn.style.cursor = 'pointer';
-        btn.style.display = 'flex';
-        btn.style.alignItems = 'center';
-        btn.style.justifyContent = 'center';
-        btn.style.marginLeft = '8px';
-        btn.style.padding = '0';
-        btn.style.backdropFilter = 'blur(4px)';
+    function tryClickAdButton() {
+        const adButton = document.querySelector(
+            '.ytp-ad-button.ytp-ad-button-link.ytp-ad-clickable.ytp-ad-hover-text-button--clean-player'
+        );
+        if (adButton) {
+            adButton.click();
+            return true;
+        }
+        return false;
+    }
 
-        btn.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" height="28" width="28" viewBox="0 0 24 24" fill="white">
-        <path d="M6 4l12 8-12 8z"/>
-      </svg>
-    `;
+    async function getIframeDocument() {
+        const iframe = getIframe();
+        if (!iframe) return null;
 
-        btn.addEventListener('click', () => {
-            runSequence();
-            showToast('Skip sequence started');
+        while (!iframe.contentDocument) {
+            await wait(200);
+        }
+        return iframe.contentDocument;
+    }
+
+    async function tryClickBlockButtonInIframe() {
+        const doc = await getIframeDocument();
+        if (!doc) return false;
+
+        const blockButton = doc.querySelector('button[aria-label="Block"]');
+        if (blockButton) {
+            blockButton.click();
+            return true;
+        }
+        return false;
+    }
+
+    async function tryClickContinueButtonInIframe() {
+        const doc = await getIframeDocument();
+        if (!doc) return false;
+
+        const continueButton = [...doc.querySelectorAll('div[role="button"]')].find(btn => {
+            const span = btn.querySelector('span.RveJvd.snByac');
+            return span && span.textContent.trim() === 'CONTINUE' && btn.offsetParent !== null;
         });
 
-        buttonContainer.appendChild(btn);
-        return true;
+        if (continueButton) {
+            continueButton.click();
+            console.log('Continue button clicked');
+            return true;
+        }
+        return false;
     }
 
-    // Try inserting immediately (in case toolbar is already present)
-    insertSkipButton();
+    function tryClickOverlayBackdrop() {
+        const overlay = document.querySelector('tp-yt-iron-overlay-backdrop.opened');
+        if (overlay) {
+            overlay.click();
+            return true;
+        }
+        return false;
+    }
 
-    // Watch the page for changes to dynamically add the button
-    const observer = new MutationObserver(() => {
+    async function runSequence() {
+        try {
+            await wait(500);
+            await retryUntilSuccess(tryClickAdButton);
+            console.log('Ad button clicked');
+
+            await wait(500);
+            await retryUntilSuccess(tryClickBlockButtonInIframe);
+            console.log('Block button clicked');
+
+            await wait(500);
+            await retryUntilSuccess(tryClickContinueButtonInIframe);
+            console.log('Continue button clicked');
+
+            await wait(500);
+            await retryUntilSuccess(tryClickOverlayBackdrop);
+            console.log('Overlay backdrop clicked');
+
+        } catch (error) {
+            console.log('Sequence stopped:', error.message);
+        }
+    }
+
+    await runSequence();
+}
+
+// Function to insert the skip button if not already present
+function insertSkipButton() {
+    const buttonContainer = document.querySelector('#top-level-buttons-computed');
+    if (!buttonContainer) {
+        console.log('Button container not found yet.');
+        return;
+    }
+
+    if (document.querySelector('#skip-ad-button')) {
+        // Button already exists
+        return;
+    }
+
+    const btn = document.createElement('button');
+    btn.id = 'skip-ad-button';
+
+    // Style the button like YouTube's style for top buttons
+    btn.style.width = '40px';
+    btn.style.height = '40px';
+    btn.style.borderRadius = '50%';
+    btn.style.background = 'rgba(50, 50, 50, 0.6)';
+    btn.style.border = 'none';
+    btn.style.cursor = 'pointer';
+    btn.style.display = 'flex';
+    btn.style.alignItems = 'center';
+    btn.style.justifyContent = 'center';
+    btn.style.marginLeft = '8px';
+    btn.style.padding = '0';
+    btn.style.backdropFilter = 'blur(4px)';
+
+    // Skip icon SVG (simple "fast forward" icon)
+    btn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" height="28" width="28" viewBox="0 0 24 24" fill="white">
+      <path d="M4 4v16l12-8zM16 4v16h2V4z"/>
+    </svg>
+  `;
+
+    btn.title = 'Skip Ad';
+
+    btn.onclick = () => {
+        console.log('Skip Ad button clicked!');
+        runSkipAdSequence();
+    };
+
+    buttonContainer.appendChild(btn);
+    console.log('Skip Ad button inserted.');
+}
+
+// Initial insertion on page load (with delay for YouTube DOM)
+if (location.href.includes('watch')) {
+    setTimeout(() => {
         insertSkipButton();
-    });
+    }, 1000);
+}
 
-    observer.observe(document.body, { childList: true, subtree: true });
-});
+let lastUrl = location.href;
+
+// Observe URL changes for SPA navigation on YouTube
+new MutationObserver(() => {
+    if (location.href !== lastUrl) {
+        lastUrl = location.href;
+        if (location.href.includes('watch')) {
+            setTimeout(() => {
+                insertSkipButton();
+            }, 1000);
+        }
+    }
+}).observe(document, { subtree: true, childList: true });

@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "YouTube Ad Skipper",
     "version": "1.0",
-    "description": "Skips YouTube ads and handles iframe dialogs",
+    "description": "Skip YouTube ads with a toolbar button and extension icon.",
     "permissions": [
         "scripting",
         "tabs",
@@ -11,8 +11,16 @@
     "host_permissions": [
         "https://www.youtube.com/*"
     ],
+    "background": {
+        "service_worker": "background.js"
+    },
     "action": {
-        "default_popup": "popup.html"
+        "default_icon": {
+            "16": "icons/skip-16.png",
+            "32": "icons/skip-32.png",
+            "48": "icons/skip-48.png",
+            "128": "icons/skip-128.png"
+        }
     },
     "content_scripts": [
         {
@@ -24,5 +32,8 @@
             ],
             "run_at": "document_idle"
         }
-    ]
+    ],
+    "icons": {
+        "48": "icons/skip-48.png"
+    }
 }
