@@ -6,7 +6,8 @@
     "permissions": [
         "scripting",
         "tabs",
-        "storage"
+        "storage",
+        "contextMenus"
     ],
     "host_permissions": [
         "https://www.youtube.com/*"
