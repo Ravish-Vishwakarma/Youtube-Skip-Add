@@ -157,10 +157,51 @@ function insertSkipButton() {
     console.log('Skip Ad button inserted.');
 }
 
+let autoSkipEnabled = false;
+
+// Request autoSkip setting from background script
+chrome.runtime.sendMessage({ action: 'getAutoSkip' }, response => {
+    if (response && response.autoSkip !== undefined) {
+        autoSkipEnabled = !!response.autoSkip;
+    }
+});
+
+// Listen for storage changes from background script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'autoSkipChanged') {
+        autoSkipEnabled = !!message.autoSkip;
+    }
+});
+
+let currentPlayerObserver = null; // Add this at the top
+
+function observePlayer() {
+    const moviePlayer = document.getElementById('movie_player');
+    if (moviePlayer) {
+        // Clean up existing observer
+        if (currentPlayerObserver) {
+            currentPlayerObserver.disconnect();
+        }
+        
+        // Create new observer
+        currentPlayerObserver = new MutationObserver(() => {
+            if (autoSkipEnabled && moviePlayer.classList.contains('ad-showing')) {
+                runSkipAdSequence();
+            }
+        });
+        currentPlayerObserver.observe(moviePlayer, {
+            attributes: true,
+            attributeFilter: ['class'],
+        });
+    } else {
+        setTimeout(observePlayer, 500); // This recursive call is necessary
+    }
+}
 
 if (location.href.includes('watch')) {
     setTimeout(() => {
         insertSkipButton();
+        observePlayer();
     }, 1000);
 }
 
@@ -173,6 +214,7 @@ new MutationObserver(() => {
         if (location.href.includes('watch')) {
             setTimeout(() => {
                 insertSkipButton();
+                observePlayer();
             }, 1000);
         }
     }
