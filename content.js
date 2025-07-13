@@ -29,7 +29,7 @@ const forceSkipAd = () => {
         adVideo.currentTime = adVideo.duration;
         console.log(`Skipper: Force-skipped ad by setting currentTime to ${adVideo.duration}`);
     }
-    
+
     // We also click the button as a backup to help dismiss the ad's UI elements.
     const skipButton = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern');
     if (skipButton) {
@@ -51,14 +51,14 @@ const insertManualSkipButton = () => {
 
     const manualButton = document.createElement('button');
     manualButton.id = 'skipper-manual-force-skip-button';
-    
+
     // Use YouTube's native class for seamless styling. This is crucial.
-    manualButton.className = 'ytp-button'; 
+    manualButton.className = 'ytp-button';
     manualButton.title = 'Force Skip Ad';
-    
+
     // **This line is now fixed and complete.**
-    manualButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M4 4v16l12-8zM16 4v16h2V4z"/></svg>`;
-    
+    manualButton.innerHTML = `<svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%"><use class="ytp-svg-shadow" xlink:href="#ytp-id-13"></use><path class="ytp-svg-fill" d="M 12,24 20.5,18 12,12 V 24 z M 22,12 v 12 h 2 V 12 h -2 z" id="ytp-id-13"></path></svg>`;
+
     // Make the button trigger our new force-skip function.
     manualButton.onclick = forceSkipAd;
 
